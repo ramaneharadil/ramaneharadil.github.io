@@ -10,6 +10,74 @@
 
     :root { --panel: 420px; }
 
+    /* ── Loading screen ── */
+    #loading {
+      position: fixed; inset: 0; z-index: 999;
+      background: #060612;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 0;
+      transition: opacity 0.8s ease;
+    }
+    #loading.fade-out { opacity: 0; pointer-events: none; }
+
+    #loading-heart {
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+      animation: heartbeat 1.6s ease-in-out infinite;
+    }
+    @keyframes heartbeat {
+      0%,100% { transform: scale(1);   }
+      14%      { transform: scale(1.2); }
+      28%      { transform: scale(1);   }
+      42%      { transform: scale(1.15);}
+      70%      { transform: scale(1);   }
+    }
+
+    #loading-title {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      color: #f5dfa8; letter-spacing: 4px; font-weight: normal;
+      margin-bottom: 8px;
+    }
+    #loading-sub {
+      font-size: 0.72rem; color: #7a6a50;
+      letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 32px; font-style: italic;
+    }
+
+    #loading-bar-wrap {
+      width: min(280px, 70vw); height: 2px;
+      background: rgba(184,148,106,0.15); border-radius: 1px;
+      margin-bottom: 12px; overflow: hidden;
+    }
+    #loading-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(to right, #b8946a, #f5dfa8);
+      border-radius: 1px;
+      transition: width 0.25s ease;
+    }
+    #loading-count {
+      font-size: 0.6rem; color: rgba(184,148,106,0.4);
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+
+    #begin-btn {
+      display: none;
+      margin-top: 32px;
+      background: transparent;
+      border: 1px solid rgba(184,148,106,0.5);
+      color: #f5dfa8;
+      font-family: inherit;
+      font-size: 0.8rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 13px 36px;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: background 0.25s, border-color 0.25s;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    #begin-btn:hover { background: rgba(184,148,106,0.12); border-color: #b8946a; }
+
     body {
       background: #060612;
       font-family: 'Georgia', 'Times New Roman', serif;
@@ -51,17 +119,33 @@
       font-size: clamp(0.58rem, 1.6vw, 0.75rem); margin-top: 4px; letter-spacing: 1px;
     }
 
+    /* ── Music button ── */
+    #music-btn {
+      position: fixed; top: 72px; left: 16px; z-index: 30;
+      background: rgba(12,6,2,0.82); backdrop-filter: blur(10px);
+      border: 1px solid rgba(184,148,106,0.28); border-radius: 30px;
+      padding: 7px 14px; cursor: pointer; color: #b8946a;
+      font-size: 0.78rem; letter-spacing: 1px;
+      display: flex; align-items: center; gap: 7px;
+      transition: background 0.2s; -webkit-tap-highlight-color: transparent;
+      font-family: inherit;
+    }
+    #music-btn:hover { background: rgba(12,6,2,0.95); }
+    #music-btn .icon { font-size: 0.9rem; }
+
     /* ── Journey controls ── */
     #journey-controls {
-      position: fixed; top: 18px; right: 16px; z-index: 30;
+      position: fixed; top: 72px; right: 16px; z-index: 30;
       display: flex; align-items: center; gap: 6px;
       background: rgba(12,6,2,0.82); backdrop-filter: blur(10px);
       border: 1px solid rgba(184,148,106,0.28); border-radius: 30px;
       padding: 7px 13px;
     }
     @media (min-width: 768px) {
+      #music-btn { top: 18px; }
       /* Move controls to top of right panel area */
       #journey-controls {
+        top: 18px;
         right: calc(var(--panel) + 14px);
         background: transparent; border: none; backdrop-filter: none; padding: 0;
       }
@@ -300,6 +384,22 @@
 </head>
 <body>
 
+<!-- Background music -->
+<audio id="bg-music" loop preload="auto">
+  <source src="song/mere-bina.opus" type="audio/ogg; codecs=opus">
+  <source src="song/mere-bina.m4a" type="audio/mp4">
+</audio>
+
+<!-- Loading screen -->
+<div id="loading">
+  <div id="loading-heart">❤️</div>
+  <div id="loading-title">Raman &amp; Neha</div>
+  <div id="loading-sub">Loading your journey</div>
+  <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
+  <div id="loading-count">0 / 46</div>
+  <button id="begin-btn" onclick="beginJourney()">✦ Begin ✦</button>
+</div>
+
 <canvas id="stars"></canvas>
 <div id="globe-container"></div>
 
@@ -307,6 +407,12 @@
   <h1>Raman &amp; Neha</h1>
   <p>A love story told in miles &amp; memories</p>
 </div>
+
+<!-- Music toggle -->
+<button id="music-btn" onclick="toggleMusic()">
+  <span class="icon" id="music-icon">🔇</span>
+  <span id="music-label">Play Music</span>
+</button>
 
 <!-- Journey controls -->
 <div id="journey-controls">
@@ -353,7 +459,7 @@ const TRIPS = [
     lat: 25.2048, lng: 55.2708,
     originName: 'Chandigarh', originLat: 30.7333, originLng: 76.7794,
     occasion: '🌹 Honeymoon', flag: '🇦🇪', color: '#f4c842',
-    story: 'Our very first adventure as husband and wife. The city of gold welcomed us with open arms — the Burj Khalifa glittering against the night sky, desert dunes at sunset, every moment the beginning of forever.',
+    story: 'The Dubai Miracle Garden welcomed you with a heart made of a million flowers — fitting for a honeymoon. Matching Dubai hats, matching Liverpool jerseys, and an evening dressed up at the souk. A city that felt like it was decorated just for you.',
     photos: ['photos/dubai/1.jpeg','photos/dubai/2.jpg','photos/dubai/3.jpg'],
   },
   {
@@ -361,7 +467,7 @@ const TRIPS = [
     lat: -33.8688, lng: 151.2093,
     originName: 'Hyderabad', originLat: 17.3850, originLng: 78.4867,
     occasion: '🥂 1st Anniversary', flag: '🇦🇺', color: '#ff6b35',
-    story: 'One year in, and we were already chasing the other side of the world. The Opera House, Bondi Beach at dawn, kangaroos at sunrise — Australia was as wild and big-hearted as our love.',
+    story: 'A romantic moment at the Sydney Opera House, acting like kids at the theme park, and him sweeping her off her feet in the middle of a city street. One year felt like forever and a heartbeat, all at once.',
     photos: ['photos/australia/1.jpeg','photos/australia/2.jpg','photos/australia/3.jpeg','photos/australia/4.jpeg','photos/australia/5.jpg'],
   },
   {
@@ -369,7 +475,7 @@ const TRIPS = [
     lat: 7.9519, lng: 98.3381,
     originName: 'Hyderabad', originLat: 17.3850, originLng: 78.4867,
     occasion: '🥂 2nd Anniversary', flag: '🇹🇭', color: '#f4a0c0',
-    story: 'Two years in, and we found ourselves in paradise. Golden temples in morning mist, longtail boats on emerald water, street food that made us forget the whole world existed.',
+    story: 'The Grand Palace gleaming in the Bangkok sun, then an island jungle café with rattan egg chairs and pink beanbags scattered around. Two years in and still exploring like it was day one.',
     photos: ['photos/thailand/IMG_0448.jpeg','photos/thailand/IMG_3848.jpg','photos/thailand/IMG_3437.jpg','photos/thailand/IMG_3574.jpg','photos/thailand/IMG_1259.jpg'],
   },
   {
@@ -377,15 +483,15 @@ const TRIPS = [
     lat: 40.4168, lng: -3.7038,
     originName: 'Hyderabad', originLat: 17.3850, originLng: 78.4867,
     occasion: '✈️ Summer Escape', flag: '🇪🇸', color: '#e63946',
-    story: 'Sangria under the Spanish sun, Gaudí\'s impossible architecture, flamenco echoing through cobblestone streets at midnight. Spain didn\'t just steal our hearts — it danced with them.',
+    story: 'Barcelona\'s sunny Plaça Reial, then Madrid\'s Plaza Mayor where a giant gorilla street performer photobombed the photo and nobody minded. Spain was theatrical, golden, and completely unforgettable.',
     photos: ['photos/spain/IMG_9095.jpg','photos/spain/IMG_9259.jpg','photos/spain/IMG_9756.jpg'],
   },
   {
     id: 'switzerland', name: 'Switzerland', location: 'Switzerland', date: 'July 2024',
     lat: 46.8182, lng: 8.2275,
-    originName: 'Hyderabad', originLat: 17.3850, originLng: 78.4867,
+    originName: 'Spain', originLat: 40.4168, originLng: -3.7038,
     occasion: '⛰️ Alpine Adventure', flag: '🇨🇭', color: '#4ecdc4',
-    story: 'From Spanish heat to Alpine cool in one summer. Snow-capped peaks, Swiss chocolate, train rides through scenery that looked too perfect to be real.',
+    story: 'An Interlaken selfie with the Alps rising behind the village, then up into the meadows where the mountains were so impossibly green and steep they didn\'t look real. She wore a leopard jacket. The peaks wore clouds.',
     photos: ['photos/switzerland/IMG_0006.jpg','photos/switzerland/IMG_0573.jpg','photos/switzerland/IMG_9873.jpg','photos/switzerland/IMG_1156.jpeg'],
   },
   {
@@ -393,7 +499,7 @@ const TRIPS = [
     lat: 13.7563, lng: 100.5018,
     originName: 'Bengaluru', originLat: 12.9716, originLng: 77.5946,
     occasion: '🌴 Return to Paradise', flag: '🇹🇭', color: '#a8dadc',
-    story: 'Some places call you back. Thailand pulled us in again — new corners, new temples, new flavors. Familiar magic, completely fresh wonder.',
+    story: 'Turquoise water, longtail boats, white sand and an island on the horizon. He carried her along the shore like the world had nowhere else to be. Some places pull you back — and you don\'t resist.',
     photos: ['photos/thailand-2/GOPR2506.jpeg','photos/thailand-2/IMG_8953.jpeg','photos/thailand-2/IMG_9020.jpeg'],
   },
   {
@@ -401,7 +507,7 @@ const TRIPS = [
     lat: 36.7783, lng: -100.4179,
     originName: 'Bengaluru', originLat: 12.9716, originLng: 77.5946,
     occasion: '🎂 Her Birthday', flag: '🇺🇸', color: '#b17be8',
-    story: 'City of Angels to the City that Never Sleeps — all for her birthday. Sunset boulevards in LA, Times Square blazing at midnight in New York. The whole country felt like it was celebrating her.',
+    story: 'Universal Studios Hollywood, a wildflower meadow hike with mountain views, then across to the Brooklyn Bridge in New York. Two coasts, one birthday. LA showed off, New York delivered.',
     photos: ['photos/usa-1/IMG_0832.jpg','photos/usa-1/IMG_1246.jpg','photos/usa-1/IMG_8771.jpg','photos/usa-1/IMG_9908.jpg','photos/usa-1/FullSizeRender.jpg','photos/usa-1/IMG_1061.jpg'],
   },
   {
@@ -409,7 +515,7 @@ const TRIPS = [
     lat: 35.6762, lng: 139.6503,
     originName: 'Bengaluru', originLat: 12.9716, originLng: 77.5946,
     occasion: '🍁 Autumn in Japan', flag: '🇯🇵', color: '#e8a0bf',
-    story: 'Autumn leaves falling on Kyoto shrines, ramen at 2am in Tokyo, deer bowing in Nara. Japan was a dream we didn\'t know we needed — precise, beautiful, utterly unlike anywhere else.',
+    story: 'They dressed in kimono and walked under Kyoto\'s red torii gates, paper parasol in hand. The autumn garden — maples ablaze, a still pond, stepping stones — looked like a painting. Japan dressed them in its culture and they never wanted to take it off.',
     photos: ['photos/japan/027A6146.jpeg','photos/japan/IMG_0488.jpeg','photos/japan/IMG_0746.jpeg','photos/japan/IMG_1257.jpeg','photos/japan/IMG_1532.jpeg','photos/japan/IMG_1953.jpeg','photos/japan/IMG_2615.jpeg','photos/japan/IMG_2864.jpeg','photos/japan/IMG_3351.jpeg','photos/japan/IMG_3618.jpeg','photos/japan/IMG_4114.jpeg','photos/japan/IMG_5447.jpeg'],
   },
   {
@@ -417,7 +523,7 @@ const TRIPS = [
     lat: 37.7749, lng: -122.4194,
     originName: 'Bengaluru', originLat: 12.9716, originLng: 77.5946,
     occasion: '🌉 Quick Getaway', flag: '🇺🇸', color: '#f7b731',
-    story: 'A spontaneous SFO run — Golden Gate in the morning fog, clam chowder at Fisherman\'s Wharf, and the reminder that any city is more beautiful when you\'re together.',
+    story: 'A kiss on a colourful California beach, then the Golden Gate Bridge in brilliant sunshine. A gentle trip, a slower pace. This time, there were three of you.',
     photos: ['photos/usa-2/IMG_8499.jpeg','photos/usa-2/IMG_8935.jpeg','photos/usa-2/IMG_9333.jpeg','photos/usa-2/IMG_9757.jpeg','photos/usa-2/IMG_0332.jpeg'],
   },
 ];
@@ -652,12 +758,80 @@ function openLightbox(src) { document.getElementById('lb-img').src = src; docume
 function closeLightbox()    { document.getElementById('lightbox').classList.remove('show'); document.getElementById('lb-img').src = ''; }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
-// ── Init ───────────────────────────────────────────────────────
+// ── Music ─────────────────────────────────────────────────────
+const audio = document.getElementById('bg-music');
+audio.volume = 0.35;
+let musicPlaying = false;
+
+function startMusic() {
+  audio.play().then(() => {
+    musicPlaying = true;
+    document.getElementById('music-icon').textContent  = '🎵';
+    document.getElementById('music-label').textContent = 'Mere Bina';
+  }).catch(() => {});
+}
+
+function toggleMusic() {
+  if (musicPlaying) {
+    audio.pause();
+    musicPlaying = false;
+    document.getElementById('music-icon').textContent  = '🔇';
+    document.getElementById('music-label').textContent = 'Play Music';
+  } else {
+    startMusic();
+  }
+}
+
+// ── Init / preloader ──────────────────────────────────────────
 renderDefault();
-setTimeout(() => {
+
+const ALL_PHOTOS = TRIPS.flatMap(t => t.photos);
+const TOTAL      = ALL_PHOTOS.length;
+let loadedCount  = 0;
+let globeReady   = false;
+
+function updateProgress() {
+  const pct = Math.round((loadedCount / TOTAL) * 100);
+  document.getElementById('loading-bar').style.width   = pct + '%';
+  document.getElementById('loading-count').textContent = `${loadedCount} / ${TOTAL} photos`;
+}
+
+function onAllReady() {
+  if (!globeReady || loadedCount < TOTAL) return;
+  // Everything loaded — show Begin button
+  setTimeout(() => {
+    document.getElementById('loading-count').style.display = 'none';
+    document.getElementById('loading-bar-wrap').style.display = 'none';
+    document.getElementById('loading-sub').textContent = 'Ready';
+    document.getElementById('begin-btn').style.display = 'block';
+  }, 300);
+}
+
+function beginJourney() {
+  const el = document.getElementById('loading');
+  el.classList.add('fade-out');
+  setTimeout(() => { el.style.display = 'none'; }, 850);
   document.getElementById('hint').style.display = 'none';
+  startMusic();
   playStep(0);
-}, 2200);
+}
+
+// Preload all photos
+ALL_PHOTOS.forEach(src => {
+  const img = new Image();
+  img.onload = img.onerror = () => {
+    loadedCount++;
+    updateProgress();
+    onAllReady();
+  };
+  img.src = src;
+});
+
+// Globe texture ready
+globe.onGlobeReady(() => {
+  globeReady = true;
+  onAllReady();
+});
 </script>
 </body>
 </html>
