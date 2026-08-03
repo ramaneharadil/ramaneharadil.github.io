@@ -8,141 +8,233 @@
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
+    :root { --panel: 420px; }
+
     body {
       background: #060612;
       font-family: 'Georgia', 'Times New Roman', serif;
       overflow: hidden;
-      height: 100vh; width: 100vw;
-      color: #fff;
+      height: 100vh; width: 100vw; color: #fff;
     }
 
     /* ── Stars ── */
     #stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 
-    /* ── Globe always full screen ── */
-    #globe-container { position: fixed; inset: 0; z-index: 1; }
+    /* ── Globe ── */
+    #globe-container {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+    @media (min-width: 768px) {
+      #globe-container { right: var(--panel); }
+    }
 
     /* ── Header ── */
     #header {
-      position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
-      z-index: 10; text-align: center; pointer-events: none; white-space: nowrap;
+      position: fixed; top: 18px; z-index: 10;
+      text-align: center; pointer-events: none; white-space: nowrap;
+      /* centre within the globe area */
+      left: 0;
+      right: 0;
+    }
+    @media (min-width: 768px) {
+      #header { right: var(--panel); }
     }
     #header h1 {
-      font-size: clamp(1rem, 3.5vw, 1.7rem); color: #f5dfa8;
+      font-size: clamp(1rem, 3vw, 1.6rem); color: #f5dfa8;
       letter-spacing: clamp(2px, 1vw, 4px);
       text-shadow: 0 0 28px rgba(245,223,168,0.35); font-weight: normal;
     }
     #header p {
       color: #b8946a; font-style: italic;
-      font-size: clamp(0.6rem, 1.8vw, 0.78rem); margin-top: 4px; letter-spacing: 1px;
+      font-size: clamp(0.58rem, 1.6vw, 0.75rem); margin-top: 4px; letter-spacing: 1px;
     }
 
-    /* ── Journey controls (top-right) ── */
+    /* ── Journey controls ── */
     #journey-controls {
       position: fixed; top: 18px; right: 16px; z-index: 30;
       display: flex; align-items: center; gap: 6px;
       background: rgba(12,6,2,0.82); backdrop-filter: blur(10px);
       border: 1px solid rgba(184,148,106,0.28); border-radius: 30px;
-      padding: 8px 14px;
+      padding: 7px 13px;
+    }
+    @media (min-width: 768px) {
+      /* Move controls to top of right panel area */
+      #journey-controls {
+        right: calc(var(--panel) + 14px);
+        background: transparent; border: none; backdrop-filter: none; padding: 0;
+      }
     }
     .jc-btn {
       background: none; border: none; color: #b8946a; cursor: pointer;
-      font-size: 0.85rem; padding: 2px 4px; line-height: 1;
+      font-size: 0.85rem; padding: 2px 5px; line-height: 1;
       transition: color 0.2s; -webkit-tap-highlight-color: transparent;
     }
     .jc-btn:hover { color: #f5dfa8; }
-    #journey-step {
-      font-size: 0.68rem; color: #7a6a50; letter-spacing: 1px;
-      min-width: 32px; text-align: center;
-    }
+    #journey-step { font-size: 0.65rem; color: #7a6a50; letter-spacing: 1px; min-width: 32px; text-align: center; }
     #btn-play { font-size: 1rem; }
 
-    /* ── Trip card — always bottom sheet, globe stays visible above ── */
-    #card {
-      position: fixed;
-      left: 0; right: 0; bottom: -100%;
-      z-index: 20;
-      /* max-width so it doesn't stretch too wide on big screens */
-      max-width: 560px;
-      margin: 0 auto;
-      height: 46vh;
-      background: rgba(12,6,2,0.94);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(184,148,106,0.25);
-      border-radius: 18px 18px 0 0;
+    /* ── RIGHT PANEL ── */
+    #panel {
+      position: fixed; z-index: 20;
+      background: rgba(10,5,2,0.97);
       overflow: hidden;
-      pointer-events: auto;
+
+      /* MOBILE: bottom sheet */
+      left: 0; right: 0; bottom: -100%;
+      height: 48vh;
+      border-top: 1px solid rgba(184,148,106,0.22);
+      border-radius: 18px 18px 0 0;
       transition: bottom 0.42s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    #card.show { bottom: 0; }
+    #panel.show { bottom: 0; }
 
-    #card-inner {
-      height: 100%; overflow-y: auto; overflow-x: hidden;
-      padding: 0 20px 28px;
-      scrollbar-width: thin; scrollbar-color: rgba(184,148,106,0.2) transparent;
-      -webkit-overflow-scrolling: touch;
+    /* DESKTOP: always-visible right sidebar */
+    @media (min-width: 768px) {
+      #panel {
+        top: 0; right: 0; bottom: 0 !important;
+        left: auto; width: var(--panel);
+        height: 100vh;
+        border-top: none; border-left: 1px solid rgba(184,148,106,0.18);
+        border-radius: 0;
+        transition: none;
+      }
     }
 
-    #card-close {
+    #panel-inner {
+      height: 100%; overflow-y: auto; overflow-x: hidden;
+      padding: 0 20px 36px;
+      scrollbar-width: thin; scrollbar-color: rgba(184,148,106,0.15) transparent;
+      -webkit-overflow-scrolling: touch;
+    }
+    #panel-inner::-webkit-scrollbar { width: 3px; }
+    #panel-inner::-webkit-scrollbar-thumb { background: rgba(184,148,106,0.2); border-radius: 2px; }
+
+    /* Drag handle — mobile only */
+    #panel-handle {
+      width: 36px; height: 4px;
+      background: rgba(184,148,106,0.3); border-radius: 2px;
+      margin: 10px auto 14px;
+    }
+    @media (min-width: 768px) { #panel-handle { display: none; } }
+
+    /* Close button — mobile only */
+    #panel-close {
       position: sticky; top: 8px; float: right;
       background: rgba(184,148,106,0.1);
       border: 1px solid rgba(184,148,106,0.3); color: #b8946a;
       width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
       font-size: 12px; display: flex; align-items: center; justify-content: center;
       transition: background 0.2s; -webkit-tap-highlight-color: transparent;
-      margin-bottom: 8px; z-index: 1; flex-shrink: 0;
+      margin-bottom: 8px; z-index: 1;
     }
-    #card-close:hover { background: rgba(184,148,106,0.25); }
+    #panel-close:hover { background: rgba(184,148,106,0.22); }
+    @media (min-width: 768px) { #panel-close { display: none; } }
 
-    /* Drag handle */
-    #card-handle {
-      width: 36px; height: 4px;
-      background: rgba(184,148,106,0.3); border-radius: 2px;
-      margin: 10px auto 14px;
+    /* ── Default panel state (desktop welcome) ── */
+    #panel-default {
+      padding-top: 32px;
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; gap: 6px;
     }
+    .pd-heart { font-size: 2rem; margin-bottom: 4px; }
+    .pd-names { font-size: 1.35rem; color: #f5dfa8; font-weight: normal; letter-spacing: 2px; }
+    .pd-sub   { font-size: 0.68rem; color: #b8946a; letter-spacing: 2px; text-transform: uppercase; font-style: italic; margin-bottom: 16px; }
+    .pd-stats {
+      display: flex; gap: 20px; justify-content: center;
+      margin-bottom: 24px;
+    }
+    .pd-stat { text-align: center; }
+    .pd-stat .num { font-size: 1.6rem; color: #f5dfa8; line-height: 1; }
+    .pd-stat .lbl { font-size: 0.55rem; color: #7a6a50; letter-spacing: 2px; text-transform: uppercase; margin-top: 3px; }
 
-    .c-flag     { font-size: 2.2rem; display: block; margin-bottom: 6px; }
-    .c-occasion { font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; color: #b8946a; margin-bottom: 5px; }
-    .c-name     { font-size: clamp(1.1rem, 3vw, 1.45rem); color: #f5dfa8; font-weight: normal; margin-bottom: 3px; }
-    .c-route    { font-size: 0.72rem; color: #6a5a3a; font-style: italic; margin-bottom: 14px; }
-    .c-story    { font-size: clamp(0.78rem, 2.2vw, 0.87rem); color: #cbbfa8; line-height: 1.72; margin-bottom: 18px; }
+    .pd-divider {
+      width: 100%; height: 1px; background: rgba(184,148,106,0.15); margin-bottom: 20px;
+    }
+    .pd-hint { font-size: 0.65rem; color: rgba(184,148,106,0.45); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 18px; }
 
+    /* Trip chips in default view */
+    .pd-trips { display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: left; }
+    .pd-trip-chip {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 12px; border-radius: 10px; cursor: pointer;
+      background: rgba(184,148,106,0.06); border: 1px solid rgba(184,148,106,0.12);
+      transition: background 0.18s, border-color 0.18s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pd-trip-chip:hover { background: rgba(184,148,106,0.14); border-color: rgba(184,148,106,0.35); }
+    .pd-chip-thumb {
+      width: 38px; height: 38px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
+      border: 1.5px solid rgba(184,148,106,0.2);
+    }
+    .pd-chip-flag { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; background: rgba(184,148,106,0.08); border: 1.5px solid rgba(184,148,106,0.15); }
+    .pd-chip-info { flex: 1; min-width: 0; }
+    .pd-chip-name { font-size: 0.82rem; color: #f5dfa8; }
+    .pd-chip-date { font-size: 0.6rem; color: #6a5a3a; margin-top: 2px; }
+    .pd-chip-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Active trip panel content ── */
+    .c-flag     { font-size: 2rem; display: block; margin-bottom: 5px; }
+    .c-occasion { font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; color: #b8946a; margin-bottom: 4px; }
+    .c-name     { font-size: clamp(1.1rem, 2.5vw, 1.4rem); color: #f5dfa8; font-weight: normal; margin-bottom: 3px; }
+    .c-route    { font-size: 0.68rem; color: #6a5a3a; font-style: italic; margin-bottom: 13px; }
+    .c-story    { font-size: 0.83rem; color: #cbbfa8; line-height: 1.72; margin-bottom: 16px; }
     .c-section  {
-      font-size: 0.58rem; letter-spacing: 2.5px; text-transform: uppercase;
+      font-size: 0.56rem; letter-spacing: 2.5px; text-transform: uppercase;
       color: #7a6a50; margin-bottom: 10px;
-      padding-top: 14px; border-top: 1px solid rgba(184,148,106,0.15);
+      padding-top: 12px; border-top: 1px solid rgba(184,148,106,0.15);
     }
 
-    /* ── Horizontal photo strip ── */
+    /* MOBILE: horizontal photo strip */
     .photo-strip {
       display: flex; gap: 8px;
-      overflow-x: auto; overflow-y: hidden;
-      padding-bottom: 6px;
+      overflow-x: auto; padding-bottom: 4px;
       scrollbar-width: thin; scrollbar-color: rgba(184,148,106,0.2) transparent;
       -webkit-overflow-scrolling: touch;
     }
     .photo-strip::-webkit-scrollbar { height: 3px; }
-    .photo-strip::-webkit-scrollbar-track { background: transparent; }
-    .photo-strip::-webkit-scrollbar-thumb { background: rgba(184,148,106,0.3); border-radius: 2px; }
-
+    .photo-strip::-webkit-scrollbar-thumb { background: rgba(184,148,106,0.25); border-radius: 2px; }
     .strip-photo {
-      flex-shrink: 0;
-      height: 130px; width: auto;
-      border-radius: 9px;
-      cursor: pointer;
-      object-fit: cover;
-      transition: transform 0.25s, filter 0.25s;
+      flex-shrink: 0; height: 105px; width: auto; border-radius: 9px;
+      cursor: pointer; object-fit: cover; display: block;
+      transition: transform 0.22s, filter 0.22s;
       filter: brightness(0.9) saturate(1.05);
       box-shadow: 0 3px 10px rgba(0,0,0,0.5);
-      display: block;
     }
-    .strip-photo:hover { transform: scale(1.04); filter: brightness(1.05) saturate(1.15); }
-    @media (max-width: 599px) { .strip-photo { height: 100px; } }
+    .strip-photo:hover { transform: scale(1.04); filter: brightness(1.05) saturate(1.12); }
+
+    /* DESKTOP: masonry photo grid */
+    @media (min-width: 768px) {
+      .photo-strip {
+        display: block;
+        columns: 2; column-gap: 7px;
+        overflow: visible; padding: 0;
+      }
+      .strip-photo {
+        display: block; width: 100%; height: auto;
+        margin-bottom: 7px; flex-shrink: unset;
+        break-inside: avoid;
+      }
+      .strip-photo:hover { transform: scale(1.02); }
+    }
+
+    /* ── Desktop panel top bar ── */
+    #panel-topbar {
+      display: none;
+      padding: 22px 20px 14px;
+      border-bottom: 1px solid rgba(184,148,106,0.12);
+      margin-bottom: 0;
+      position: sticky; top: 0; z-index: 5;
+      background: rgba(10,5,2,0.97);
+    }
+    #panel-topbar h2 { font-size: 0.95rem; color: #f5dfa8; font-weight: normal; letter-spacing: 2px; }
+    #panel-topbar p  { font-size: 0.58rem; color: #7a6a50; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+    @media (min-width: 768px) { #panel-topbar { display: block; } }
 
     /* ── Globe photo pins ── */
     .globe-pin {
-      width: 46px; height: 46px; border-radius: 50%;
+      width: 44px; height: 44px; border-radius: 50%;
       border: 2.5px solid #fff; overflow: hidden; cursor: pointer;
       box-shadow: 0 2px 12px rgba(0,0,0,0.7);
       transition: transform 0.2s, box-shadow 0.2s;
@@ -151,44 +243,48 @@
       -webkit-tap-highlight-color: transparent;
     }
     .globe-pin img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .globe-pin .pin-flag { font-size: 1.3rem; }
+    .globe-pin .pin-flag { font-size: 1.2rem; }
     .globe-pin:hover, .globe-pin.active {
-      transform: scale(1.2);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 0 3px rgba(255,255,255,0.5);
+      transform: scale(1.22);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 0 3px rgba(255,255,255,0.45);
     }
     .pin-pulse {
       position: absolute; inset: -6px; border-radius: 50%;
       border: 2px solid currentColor;
-      animation: pinpulse 2.2s ease-out infinite; pointer-events: none;
+      opacity: 0; pointer-events: none;
+    }
+    /* Only pulse the active pin */
+    .globe-pin.active .pin-pulse {
+      animation: pinpulse 2s ease-out infinite;
+      opacity: 1;
     }
     @keyframes pinpulse { 0%{transform:scale(0.85);opacity:.8} 100%{transform:scale(1.6);opacity:0} }
 
-    /* ── Journey progress bar ── */
-    #progress-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 2px;
-      background: rgba(184,148,106,0.12); z-index: 25;
-    }
-    #progress-fill {
-      height: 100%; background: linear-gradient(to right, #b8946a, #f5dfa8);
-      transition: width 0.3s linear; width: 0%;
-    }
+    /* ── Progress bar ── */
+    #progress-bar { position: fixed; bottom: 0; left: 0; z-index: 25; height: 2px; background: rgba(184,148,106,0.1); right: 0; }
+    @media (min-width: 768px) { #progress-bar { right: var(--panel); } }
+    #progress-fill { height: 100%; background: linear-gradient(to right, #b8946a, #f5dfa8); width: 0%; }
 
-    /* ── Now playing label ── */
+    /* ── Now playing ── */
     #now-playing {
-      position: fixed; bottom: 8px; left: 50%;
-      transform: translateX(-50%);
-      font-size: 0.6rem; color: rgba(184,148,106,0.5);
-      letter-spacing: 2px; text-transform: uppercase;
-      z-index: 26; pointer-events: none; white-space: nowrap;
-      transition: opacity 0.4s;
+      position: fixed; bottom: 7px; z-index: 26; pointer-events: none;
+      font-size: 0.58rem; color: rgba(184,148,106,0.45);
+      letter-spacing: 2px; text-transform: uppercase; white-space: nowrap;
+      left: 50%;  transform: translateX(-50%);
+    }
+    @media (min-width: 768px) {
+      #now-playing { left: 0; right: var(--panel); transform: none; text-align: center; }
     }
 
     /* ── Hint ── */
     #hint {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      color: rgba(184,148,106,0.55); font-size: clamp(0.58rem, 1.8vw, 0.7rem);
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+      color: rgba(184,148,106,0.5); font-size: 0.65rem;
       letter-spacing: 2px; z-index: 10; pointer-events: none;
       animation: pulse 3s ease-in-out infinite; white-space: nowrap;
+    }
+    @media (min-width: 768px) {
+      #hint { left: 0; right: var(--panel); transform: none; text-align: center; }
     }
     @keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
 
@@ -198,14 +294,8 @@
       z-index: 200; display: none; align-items: center; justify-content: center;
     }
     #lightbox.show { display: flex; }
-    #lightbox img {
-      max-width: 96vw; max-height: 90vh;
-      border-radius: 6px; box-shadow: 0 0 60px rgba(0,0,0,0.9); object-fit: contain;
-    }
-    #lb-close {
-      position: fixed; top: 14px; right: 18px;
-      color: #b8946a; font-size: 2rem; cursor: pointer; line-height: 1; z-index: 201;
-    }
+    #lightbox img { max-width: 96vw; max-height: 90vh; border-radius: 6px; object-fit: contain; box-shadow: 0 0 60px rgba(0,0,0,0.9); }
+    #lb-close { position: fixed; top: 14px; right: 18px; color: #b8946a; font-size: 2rem; cursor: pointer; z-index: 201; line-height: 1; }
   </style>
 </head>
 <body>
@@ -220,26 +310,31 @@
 
 <!-- Journey controls -->
 <div id="journey-controls">
-  <button class="jc-btn" id="btn-prev" title="Previous" onclick="journeyStep(-1)">◀</button>
+  <button class="jc-btn" id="btn-prev" onclick="journeyStep(-1)" title="Previous">◀</button>
   <span id="journey-step">1 / 9</span>
-  <button class="jc-btn" id="btn-play" title="Play/Pause" onclick="togglePlay()">⏸</button>
-  <button class="jc-btn" id="btn-next" title="Next" onclick="journeyStep(1)">▶</button>
+  <button class="jc-btn" id="btn-play" onclick="togglePlay()" title="Play/Pause">⏸</button>
+  <button class="jc-btn" id="btn-next" onclick="journeyStep(1)" title="Next">▶</button>
 </div>
 
-<!-- Trip card (left on desktop, bottom on mobile) -->
-<div id="card">
-  <div id="card-inner">
-    <div id="card-handle"></div>
-    <button id="card-close" onclick="closeCard()">✕</button>
-    <div id="card-content"></div>
+<!-- Single panel: right sidebar on desktop, bottom sheet on mobile -->
+<div id="panel">
+  <!-- desktop top bar -->
+  <div id="panel-topbar">
+    <h2>Raman &amp; Neha</h2>
+    <p>Our world journey</p>
+  </div>
+
+  <div id="panel-inner">
+    <div id="panel-handle"></div>
+    <button id="panel-close" onclick="closePanel()">✕</button>
+    <div id="panel-content">
+      <!-- filled by JS -->
+    </div>
   </div>
 </div>
 
-<!-- Progress bar -->
 <div id="progress-bar"><div id="progress-fill"></div></div>
 <div id="now-playing"></div>
-
-<!-- Hint (shown before journey starts) -->
 <div id="hint">✦ &nbsp;Starting your journey…&nbsp; ✦</div>
 
 <!-- Lightbox -->
@@ -302,7 +397,7 @@ const TRIPS = [
     photos: ['photos/thailand-2/GOPR2506.jpeg','photos/thailand-2/IMG_8953.jpeg','photos/thailand-2/IMG_9020.jpeg'],
   },
   {
-    id: 'usa-1', name: 'LA & New York', location: 'Los Angeles & New York, USA', date: 'August 2025',
+    id: 'usa-1', name: 'LA & New York', location: 'Los Angeles & New York', date: 'August 2025',
     lat: 36.7783, lng: -100.4179,
     originName: 'Bengaluru', originLat: 12.9716, originLng: 77.5946,
     occasion: '🎂 Her Birthday', flag: '🇺🇸', color: '#b17be8',
@@ -330,7 +425,7 @@ const TRIPS = [
 const ARCS = TRIPS.map(t => ({
   startLat: t.originLat, startLng: t.originLng,
   endLat: t.lat, endLng: t.lng,
-  color: ['rgba(255,255,255,0.45)', t.color + 'cc'],
+  color: ['rgba(255,255,255,0.4)', t.color + 'cc'],
 }));
 
 const HOME_CITIES = [
@@ -338,6 +433,12 @@ const HOME_CITIES = [
   { name: 'Hyderabad',  lat: 17.3850, lng: 78.4867 },
   { name: 'Bengaluru',  lat: 12.9716, lng: 77.5946 },
 ];
+
+// ── Helpers ───────────────────────────────────────────────────
+const isDesktop = () => window.innerWidth >= 768;
+const PANEL_W = 420;
+
+function globeWidth() { return isDesktop() ? window.innerWidth - PANEL_W : window.innerWidth; }
 
 // ── Starfield ─────────────────────────────────────────────────
 (function(){
@@ -352,13 +453,12 @@ const HOME_CITIES = [
 })();
 
 // ── Globe ──────────────────────────────────────────────────────
-let activePinEl = null;
-
 const globe = Globe()
   .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-  .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+  .bumpImageUrl(null)
   .backgroundImageUrl(null)
   .backgroundColor('rgba(0,0,0,0)')
+  .width(globeWidth()).height(window.innerHeight)
   .htmlElementsData(TRIPS)
   .htmlLat('lat').htmlLng('lng').htmlAltitude(0.06)
   .htmlElement(d => {
@@ -370,51 +470,81 @@ const globe = Globe()
     pin.setAttribute('data-id', d.id);
     const pulse = document.createElement('div');
     pulse.className = 'pin-pulse'; pulse.style.color = d.color;
-    const firstPhoto = d.photos[0];
-    if (firstPhoto) {
-      const img = document.createElement('img'); img.src = firstPhoto; img.alt = d.name;
+    if (d.photos[0]) {
+      const img = document.createElement('img'); img.src = d.photos[0]; img.alt = d.name;
       pin.appendChild(img);
     } else {
       const f = document.createElement('span'); f.className = 'pin-flag'; f.textContent = d.flag;
       pin.appendChild(f);
     }
     pin.appendChild(pulse); wrap.appendChild(pin);
-    wrap.addEventListener('click', e => {
-      e.stopPropagation();
-      pauseJourney();
-      flyToTrip(d, true);
-    });
+    wrap.addEventListener('click', e => { e.stopPropagation(); pauseJourney(); flyToTrip(d, true); });
     return wrap;
   })
   .pointsData(HOME_CITIES)
   .pointLat('lat').pointLng('lng')
-  .pointColor(() => 'rgba(255,255,255,0.7)')
-  .pointRadius(0.25).pointAltitude(0.005)
-  .pointLabel(d => `<div style="background:rgba(10,5,2,0.88);border:1px solid rgba(255,255,255,0.25);border-radius:6px;padding:5px 10px;font-family:Georgia,serif;font-size:0.72rem;color:#f5dfa8;">${d.name}</div>`)
+  .pointColor(() => 'rgba(255,255,255,0.65)')
+  .pointRadius(0.24).pointAltitude(0.005)
+  .pointLabel(d => `<div style="background:rgba(10,5,2,0.88);border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:5px 10px;font-family:Georgia,serif;font-size:0.72rem;color:#f5dfa8;">${d.name}</div>`)
   .arcsData(ARCS)
   .arcStartLat('startLat').arcStartLng('startLng')
   .arcEndLat('endLat').arcEndLng('endLng')
   .arcColor('color').arcStroke(0.28)
-  .arcDashLength(0.3).arcDashGap(0.1).arcDashAnimateTime(3500)
+  .arcDashLength(0.4).arcDashGap(0.15).arcDashAnimateTime(6000)
   .arcAltitudeAutoScale(0.35)
   (document.getElementById('globe-container'));
 
 globe.controls().autoRotate = true;
-globe.controls().autoRotateSpeed = 0.4;
-window.addEventListener('resize', () => { globe.width(innerWidth); globe.height(innerHeight); });
+globe.controls().autoRotateSpeed = 0.25;
+globe.controls().enableDamping = true;
 
-// ── Card ───────────────────────────────────────────────────────
-function showCard(trip) {
-  // Highlight active pin
+window.addEventListener('resize', () => {
+  globe.width(globeWidth()).height(window.innerHeight);
+});
+
+// ── Panel content ─────────────────────────────────────────────
+function renderDefault() {
+  const chips = TRIPS.map(t => {
+    const thumb = t.photos[0]
+      ? `<img class="pd-chip-thumb" src="${t.photos[0]}" alt="${t.name}" loading="lazy">`
+      : `<div class="pd-chip-flag">${t.flag}</div>`;
+    return `<div class="pd-trip-chip" onclick="pauseJourney(); flyToTrip(TRIPS.find(x=>x.id==='${t.id}'), true)">
+      ${thumb}
+      <div class="pd-chip-info">
+        <div class="pd-chip-name">${t.flag} ${t.name}</div>
+        <div class="pd-chip-date">${t.date} · ${t.occasion}</div>
+      </div>
+      <div class="pd-chip-dot" style="background:${t.color}"></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('panel-content').innerHTML = `
+    <div id="panel-default">
+      <div class="pd-heart">❤️</div>
+      <div class="pd-names">Raman &amp; Neha</div>
+      <div class="pd-sub">Our world journey</div>
+      <div class="pd-stats">
+        <div class="pd-stat"><div class="num">9</div><div class="lbl">Trips</div></div>
+        <div class="pd-stat"><div class="num">5</div><div class="lbl">Years</div></div>
+        <div class="pd-stat"><div class="num">14</div><div class="lbl">Countries</div></div>
+      </div>
+      <div class="pd-divider"></div>
+      <div class="pd-hint">✦ tap a destination ✦</div>
+      <div class="pd-trips">${chips}</div>
+    </div>
+  `;
+}
+
+function showTripPanel(trip) {
   document.querySelectorAll('.globe-pin').forEach(p => p.classList.remove('active'));
-  const pinEl = document.querySelector(`.globe-pin[data-id="${trip.id}"]`);
-  if (pinEl) pinEl.classList.add('active');
+  const pin = document.querySelector(`.globe-pin[data-id="${trip.id}"]`);
+  if (pin) pin.classList.add('active');
 
   const photos = trip.photos.map((src,i) =>
     `<img class="strip-photo" src="${src}" alt="${i+1}" loading="lazy" onclick="openLightbox('${src}')">`
   ).join('');
 
-  document.getElementById('card-content').innerHTML = `
+  document.getElementById('panel-content').innerHTML = `
     <span class="c-flag">${trip.flag}</span>
     <div class="c-occasion">${trip.occasion}</div>
     <div class="c-name">${trip.name}</div>
@@ -422,16 +552,27 @@ function showCard(trip) {
     <div class="c-story">${trip.story}</div>
     <div class="c-section">Photos</div>
     <div class="photo-strip">${photos}</div>
+    <div style="margin-top:18px;">
+      <span onclick="closePanel()" style="font-size:0.62rem;color:#6a5a3a;cursor:pointer;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid rgba(184,148,106,0.2);padding-bottom:1px;">
+        ← Back to all trips
+      </span>
+    </div>
   `;
-  document.getElementById('card').classList.add('show');
-  document.getElementById('card-inner').scrollTop = 0;
+
+  // On desktop panel is always visible; on mobile slide it up
+  if (!isDesktop()) {
+    document.getElementById('panel').classList.add('show');
+  }
+  document.getElementById('panel-inner').scrollTop = 0;
   document.getElementById('hint').style.display = 'none';
-  updateStepUI();
+  document.getElementById('journey-step').textContent = `${currentIndex + 1} / ${TRIPS.length}`;
 }
 
-function closeCard() {
-  document.getElementById('card').classList.remove('show');
+function closePanel() {
+  if (!isDesktop()) document.getElementById('panel').classList.remove('show');
   document.querySelectorAll('.globe-pin').forEach(p => p.classList.remove('active'));
+  renderDefault();
+  if (!isDesktop()) document.getElementById('hint').style.display = 'block';
   globe.controls().autoRotate = true;
 }
 
@@ -439,63 +580,46 @@ function closeCard() {
 let currentIndex = 0;
 let playing = true;
 let stepTimer = null;
-let progressTimer = null;
-let progressStart = 0;
+const STEP_DURATION = 7000;
 
-const STEP_DURATION = 7000; // ms card is shown per trip
-
-function flyToTrip(trip, openCard) {
+function flyToTrip(trip, openPanel) {
   globe.controls().autoRotate = false;
-
-  // 1. Fly to origin
+  // Fly to origin first
   globe.pointOfView({ lat: trip.originLat, lng: trip.originLng, altitude: 2.8 }, 900);
 
   setTimeout(() => {
-    // 2. Fly to destination — tilt lat slightly up so destination clears the card
-    const latOffset = 12;
-    globe.pointOfView({ lat: trip.lat - latOffset, lng: trip.lng, altitude: 1.9 }, 1800);
-
-    setTimeout(() => {
-      if (openCard) showCard(trip);
-    }, 1900);
+    // Fly to destination; on desktop shift globe view left so destination shows in globe area
+    const latShift  = isDesktop() ? 0  : 10;
+    const lngShift  = isDesktop() ? -15 : 0;
+    globe.pointOfView({ lat: trip.lat - latShift, lng: trip.lng + lngShift, altitude: 1.85 }, 1800);
+    if (openPanel) setTimeout(() => showTripPanel(trip), 1900);
   }, 1100);
 }
 
 function playStep(index) {
-  if (index >= TRIPS.length) {
-    // End — loop back
-    index = 0;
-  }
+  if (index >= TRIPS.length) index = 0;
   currentIndex = index;
   const trip = TRIPS[index];
-
-  document.getElementById('now-playing').textContent =
-    `${trip.originName}  →  ${trip.name}`;
-
+  document.getElementById('now-playing').textContent = `${trip.originName}  →  ${trip.name}`;
   flyToTrip(trip, true);
-  startProgress();
 
-  stepTimer = setTimeout(() => {
-    if (playing) playStep(currentIndex + 1);
-  }, STEP_DURATION + 3000); // card time + fly time
-}
-
-function startProgress() {
-  clearInterval(progressTimer);
-  progressStart = Date.now();
+  // Progress bar
   const fill = document.getElementById('progress-fill');
   fill.style.transition = 'none'; fill.style.width = '0%';
   requestAnimationFrame(() => {
-    fill.style.transition = `width ${STEP_DURATION + 3000}ms linear`;
+    const total = STEP_DURATION + 3100;
+    fill.style.transition = `width ${total}ms linear`;
     fill.style.width = '100%';
   });
+
+  stepTimer = setTimeout(() => { if (playing) playStep(currentIndex + 1); }, STEP_DURATION + 3100);
 }
 
 function pauseJourney() {
-  playing = false;
-  clearTimeout(stepTimer); clearInterval(progressTimer);
+  playing = false; clearTimeout(stepTimer);
   document.getElementById('btn-play').textContent = '▶';
-  document.getElementById('progress-fill').style.transition = 'none';
+  const fill = document.getElementById('progress-fill');
+  fill.style.transition = 'none'; fill.style.width = '0%';
 }
 
 function resumeJourney() {
@@ -504,50 +628,32 @@ function resumeJourney() {
   playStep(currentIndex);
 }
 
-function togglePlay() {
-  if (playing) pauseJourney(); else resumeJourney();
-}
+function togglePlay() { if (playing) pauseJourney(); else resumeJourney(); }
 
 function journeyStep(dir) {
-  pauseJourney();
+  clearTimeout(stepTimer);
   currentIndex = Math.max(0, Math.min(TRIPS.length - 1, currentIndex + dir));
   playing = true;
   document.getElementById('btn-play').textContent = '⏸';
   playStep(currentIndex);
 }
 
-function updateStepUI() {
-  document.getElementById('journey-step').textContent =
-    `${currentIndex + 1} / ${TRIPS.length}`;
-}
-
-// Swipe to close card on mobile
+// Swipe-down to close on mobile
 let touchStartY = 0;
-document.getElementById('card').addEventListener('touchstart', e => {
-  touchStartY = e.touches[0].clientY;
-}, { passive: true });
-document.getElementById('card').addEventListener('touchend', e => {
-  const dy = e.changedTouches[0].clientY - touchStartY;
-  if (dy > 70 && document.getElementById('card-inner').scrollTop === 0) {
-    closeCard();
-    pauseJourney();
+document.getElementById('panel').addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+document.getElementById('panel').addEventListener('touchend', e => {
+  if (e.changedTouches[0].clientY - touchStartY > 70 && document.getElementById('panel-inner').scrollTop === 0) {
+    closePanel(); pauseJourney();
   }
 }, { passive: true });
 
 // ── Lightbox ───────────────────────────────────────────────────
-function openLightbox(src) {
-  document.getElementById('lb-img').src = src;
-  document.getElementById('lightbox').classList.add('show');
-}
-function closeLightbox() {
-  document.getElementById('lightbox').classList.remove('show');
-  document.getElementById('lb-img').src = '';
-}
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeLightbox(); }
-});
+function openLightbox(src) { document.getElementById('lb-img').src = src; document.getElementById('lightbox').classList.add('show'); }
+function closeLightbox()    { document.getElementById('lightbox').classList.remove('show'); document.getElementById('lb-img').src = ''; }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
-// ── Auto-start ─────────────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────────────
+renderDefault();
 setTimeout(() => {
   document.getElementById('hint').style.display = 'none';
   playStep(0);
